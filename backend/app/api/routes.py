@@ -1,6 +1,9 @@
 from fastapi import APIRouter, UploadFile, File
 import shutil
 from pathlib import Path
+from app.services.recommendation import recommend_outfit
+
+from app.ai.inference import generate_virtual_tryon
 
 router = APIRouter()
 
@@ -26,4 +29,32 @@ async def upload_image(file: UploadFile = File(...)):
     return {
         "filename": file.filename,
         "message": "Image uploaded successfully!"
+    }
+
+from pydantic import BaseModel
+
+
+class GenerateRequest(BaseModel):
+    filename: str
+    occasion: str
+    style: str
+
+
+@router.post("/generate")
+async def generate_outfit(request: GenerateRequest):
+
+    recommendation = recommend_outfit(
+    request.occasion,
+    request.style
+    )
+
+    result = generate_virtual_tryon(
+    f"uploads/{request.filename}",
+    recommendation
+    )
+
+    return {
+    "message": "Outfit generated successfully!",
+    "recommendation": recommendation,
+    "generated_image": result["output_image"]
     }
